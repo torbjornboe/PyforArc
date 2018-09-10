@@ -1,0 +1,8 @@
+# .gitignore	
+__pycache__
+venv/
+addmultiplefields.py
+CalculateRoutes.py
+CalculateRoutesLineGeometry.py
+intorfloat_textfields.py
+update_xy_field.py
