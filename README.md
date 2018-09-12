@@ -1,2 +1,2 @@
 # PyforArc
-Moduler for simplified use of arcpy
+Modules for simplified use of arcpy
