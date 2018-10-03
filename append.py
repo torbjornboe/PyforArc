@@ -7,7 +7,13 @@ class DifferentShapeTypesError(BaseValidationError):
     pass
 
 def append(gdb,target,appendfc,fieldmap):
-
+    """
+    This tool has no output!
+    gdb -- string, workspace gdb
+    target -- string, target fc for appending
+    appendfc -- fc to append to target
+    fieldmap -- dict, e.g. {field_target: field_appendfc}
+    """
     arcpy.env.workspace = gdb
     desc_target = arcpy.Describe(target)
     desc_appendfc = arcpy.Describe(appendfc)
