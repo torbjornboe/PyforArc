@@ -1,14 +1,17 @@
 import arcpy
 
-from addmultiplefields import addmultiplefields 
+from addmultiplefields import addmultiplefields
+
 
 class BaseValidationError(TypeError):
     pass
 
+
 class DifferentShapeTypesError(BaseValidationError):
     pass
 
-def merge(gdb,merge1,merge2,fieldmap,outfc,overwrite = False):
+
+def merge(gdb, merge1, merge2, fieldmap, outfc, overwrite=False):
     """
     gdb -- workspace gdb
     merge1 -- string, output takes fields and shapeType from this
@@ -17,6 +20,7 @@ def merge(gdb,merge1,merge2,fieldmap,outfc,overwrite = False):
     outfc -- string, output merge
     overwrite -- BOOL
     """
+
     arcpy.env.workspace = gdb
     if overwrite:
         arcpy.env.overwriteOutput = True
@@ -28,36 +32,46 @@ def merge(gdb,merge1,merge2,fieldmap,outfc,overwrite = False):
     if type(fieldmap) != dict:
         print('fieldmap not dict')
         raise TypeError
-    
+
     values = list(fieldmap.values())
     keys = list(fieldmap.keys())
-    merge1_fields = [(f.name,f.type) for f in arcpy.LitstFields(merge1) if f not in ['OBJECTID','Shape']]
-    merge2_fields = [(f.name,f.type) for f in arcpy.LitstFields(merge2) if f not in ['OBJECTID','Shape']]
-    merge2_out = [f for f in merge2_field if f[0] not in values]#fields from merge2 that is not in fieldmap
-    merge1_restfields = [f for f in merge1_field if f[0] not in keys]
-    keys_type = [f for f in merge1_field if f[0] in keys]
-    values_type = [f for f in merge2_field if f[0] in values]
-    outfields = merge1_restfields + merge2_out + keys_type + values_type
-    arcpy.CreateFeatureclass_management(gdb,outfc, desc_merge1.shapeType, spatial_reference = merge1)
-    addmultiplefields(gdb,outfc,outfields)
+    merge1_fields = [(f.name, f.type) for f in arcpy.ListFields(
+        merge1) if f.name not in ['OBJECTID', 'Shape', 'SHAPE']]
+    merge2_fields = [(f.name, f.type) for f in arcpy.ListFields(
+        merge2) if f.name not in ['OBJECTID', 'Shape', 'SHAPE']]
+    # fields from merge2 that is not in fieldmap
+    merge2_out = [f for f in merge2_fields if f[0] not in values]
+    print (f'merge2 out: {merge2_out}')
+    merge1_restfields = [f for f in merge1_fields if f[0] not in keys]
+    keys_type = [f for f in merge1_fields if f[0] in keys]
+    values_type = [f for f in merge2_fields if f[0] in values]
+    outfields = merge1_restfields + merge2_out + keys_type
+    print(outfields)
+    arcpy.CreateFeatureclass_management(
+        gdb, outfc, desc_merge1.shapeType, spatial_reference=merge1)
+    addmultiplefields(gdb, outfc, outfields)
 
-    merge1_cursor = arcpy.da.SearchCursor(merge1,['shape@'] + merge1_restfields + keys)
-    merge2_cursor = arcpy.da.SearchCursor(merge2,['shape@'] + merge2_out + vales)
-    
-    insertcursor = arcpy.da.InsertCursor(outfc,['shape@'] + merge1_restfields + keys)
+    merge1_restfields = [f[0] for f in merge1_restfields]
+    merge1_cursor = arcpy.da.SearchCursor(
+        merge1, ['shape@'] + merge1_restfields + keys)
+    merge2_out = [f[0] for f in merge2_out]
+    merge2_cursor = arcpy.da.SearchCursor(
+        merge2, ['shape@'] + merge2_out + values)
+    insertcursor = arcpy.da.InsertCursor(
+        outfc, ['shape@'] + merge1_restfields + keys)
 
     for row in merge1_cursor:
         inserts = [row[0]]
-        for index,fields in enumerate(merge1_restfields+keys,1):
+        for index, fields in enumerate(merge1_restfields + keys, 1):
             inserts.append(row[index])
         insertcursor.insertRow(inserts)
     del insertcursor
 
-    insertcursor = arcpy.da.InsertCursor(outfc,['shape@'] + merge2_out + values)
-
+    insertcursor = arcpy.da.InsertCursor(
+        outfc, ['shape@'] + merge2_out + keys)
     for row in merge2_cursor:
         inserts = [row[0]]
-        for index,fields in enumerate(merge2_out + values,1):
+        for index, fields in enumerate(merge2_out + keys, 1):
             inserts.append(row[index])
         insertcursor.insertRow(inserts)
 
@@ -65,6 +79,10 @@ def merge(gdb,merge1,merge2,fieldmap,outfc,overwrite = False):
     del merge2_cursor
     del insertcursor
 
-
-
-
+if __name__ == '__main__':
+    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
+    plants = 'plants_2'
+    trees = 'trees_2'
+    outfc = 'vegetation_2_diff_fields'
+    fieldmap = {'tree_diam': 'plant_diam', 'tree_type': 'plant_type'}
+    merge(gdb,trees,plants,fieldmap,outfc,True)
