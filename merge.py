@@ -1,3 +1,6 @@
+# std lib imports
+import logging
+
 # thrid party imports
 import arcpy
 
@@ -12,12 +15,16 @@ class BaseValidationError(TypeError):
 class DifferentShapeTypesError(BaseValidationError):
     pass
 
+class FieldmapTypeError(BaseValidationError):
+    pass
 
-def merge(merge1, merge2, outfc, fieldmap=None, gdb=None, overwrite=False):
+
+def merge(merge1, merge2, outfc, gdb, fieldmap=None, overwrite=False, logto = None):
     """
-    merge merge1 and merge2 to outfc. if gdb is given arcpy.env.workspace 
-    is set to this, else full paths are allways needed. All fields are 
-    transferred, but use fieldmap to to map fields from merge2 to merge1-fields. 
+    merge merge1 and merge2 to outfc. merge1 and merge2 will be searched for in gdb
+    if not full path is given. All fields are transferred if not mapped in fieldmap.
+    Use fieldmap to to map fields from merge2 to merge1-fields. If overwrite is set
+    outfc will be overwritten if existing. Use logto to log to textfile
 
 
     gdb -- workspace gdb
@@ -26,21 +33,31 @@ def merge(merge1, merge2, outfc, fieldmap=None, gdb=None, overwrite=False):
     fieldmap -- dict, e.g. {field_merge1: field_merge2}
     outfc -- string, output merge
     overwrite -- BOOL
+    logto -- string, path to logfile (.txt), mode append
     """
-
+    
+    if logto:
+        logging.basicConfig(filename=logto, filemode='a', level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    logging.info(f'merging {merge1} and {merge2}')
     if gdb is not None:
         arcpy.env.workspace = gdb
+        logging.info(f'env.workspace set to {gdb}')
     if overwrite:
         arcpy.env.overwriteOutput = True
+    logging.info(f'overwrite {overwrite}')
     desc_merge1 = arcpy.Describe(merge1)
     desc_merge2 = arcpy.Describe(merge2)
     if desc_merge1.shapeType != desc_merge2.shapeType:
+        logging.warning('DifferentShapeTypesError')
         raise DifferentShapeTypesError
 
     if fieldmap:
+        logging.info('fieldmap given as {fieldmap}')
         if type(fieldmap) != dict:
-            print('fieldmap not dict')
-            raise TypeError
+            logging.warning('fieldmap not dict: FieldmapTypeError')
+            raise FieldmapTypeError
         values = list(fieldmap.values())
         keys = list(fieldmap.keys())
     else:
@@ -69,7 +86,7 @@ def merge(merge1, merge2, outfc, fieldmap=None, gdb=None, overwrite=False):
         merge2, ['shape@'] + merge2_restfields + values)
     insertcursor = arcpy.da.InsertCursor(
         outfc, ['shape@'] + merge1_restfields + keys)
-
+    logging.info(f'outfields: {outfields}')
     for row in merge1_cursor:
         inserts = [row[0]]
         for index, fields in enumerate(merge1_restfields + keys, 1):
@@ -85,15 +102,9 @@ def merge(merge1, merge2, outfc, fieldmap=None, gdb=None, overwrite=False):
             inserts.append(row[index])
         insertcursor.insertRow(inserts)
 
+    logging.info(f'merge done')
     del merge1_cursor
     del merge2_cursor
     del insertcursor
 
 
-if __name__ == '__main__':
-    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
-    plants = 'plants_2'
-    trees = 'trees_2'
-    outfc = 'vegetation_2_no_fieldmap'
-    # fieldmap = {'tree_diam': 'plant_diam', 'tree_type': 'plant_type'}
-    merge(trees, plants, outfc, overwrite=True, gdb=gdb)
