@@ -1,7 +1,8 @@
 import arcpy, pathlib, sys
 
 def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields = None):
-    """Joines 1:M or 1:1. 'to_fc will' be changed. from_ denotes that this has to to with the featureclass you are getting values from. to_ denotes the featureclass you are joining to. keyfield are the fields the join will be based on. keyfield must be uniqe for from_fc.
+    """Joines 1:M or 1:1. This tool has no output! from_ denotes that this has to do with the featureclass you are getting values from.
+    to_ denotes the featureclass you are joining to. keyfield are the fields the join will be based on. keyfield must be uniqe for from_fc.
     from_fields can be a list containing field name or set to 'all' to transfer all fields exept OBJECTID and Shape.
     """
 

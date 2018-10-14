@@ -1,4 +1,5 @@
 # PyforArc
-Modules for simplified use of arcpy
+Modules for simplified use of arcpy. 
 
-Under construction...
+Tested with python 3.6.5, and arcgispro-py3 env.
+

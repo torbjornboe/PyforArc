@@ -43,12 +43,4 @@ def convert_and_update_xyfield(workspace,fc,xfield,yfield,to_cs,transformationna
         print(f'errorcount: {errorcount}')
             
     
-if __name__ == '__main__':
-    wsp = r'L:\AUD\AUD Prosjekter\Kommunane\Pendlingsanalyse for Austevoll\Geocode\Pendlingsanalyse.gdb'
-    tbl = 'Austevoll_Innpendling_Busette'
-    x = 'Bosted_x'
-    y = 'Bosted_y'
-    trans = '1149'
-    tocs = 25832
 
-convert_and_update_xyfield(wsp,tbl,x,y,tocs)

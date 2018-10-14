@@ -11,7 +11,8 @@ class FieldmapNotDictError(BaseValidationError):
 
 def append(gdb,target,appendfc,fieldmap):
     """
-    This tool has no output!
+    This tool has no output! Appends appendfc to target using fieldmap.
+    
     gdb -- string, workspace gdb
     target -- string, target fc for appending
     appendfc -- fc to append to target
