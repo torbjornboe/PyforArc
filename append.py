@@ -54,12 +54,4 @@ def append(gdb,target,appendfc,fieldmap):
         insertcursor.insertRow(item)
 
 
-if __name__ == '__main__':
 
-    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
-    # logger = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\log.txt'
-    plants = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb\plants_poly_append'
-    trees = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb\trees_poly_append'
-    #outfc = 'vegetation_2_testlog'
-    fieldmap = {'tree_diam': 'plant_diam', 'tree_type': 'plant_type'}
-    append(gdb,trees, plants,fieldmap)
