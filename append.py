@@ -1,4 +1,11 @@
+# std lib imports
+import logging
+
+# thrid party imports
 import arcpy
+
+# local imports
+from addmultiplefields import addmultiplefields
 
 class BaseValidationError(TypeError):
     pass
@@ -38,10 +45,21 @@ def append(gdb,target,appendfc,fieldmap):
                 rest_appendfieldslist.append(fname)
         except KeyError: # field does not exist
             pass
+    # addmultiplefields(gdb, target, outfields)
 
     appends = [row for row in arcpy.da.SearchCursor(appendfc,['shape@']+values+rest_appendfieldslist)]
-    insertcursor = arcpy.da.InsertCursor(target,['shape@']+keys)
+    insertcursor = arcpy.da.InsertCursor(target,['shape@']+keys+rest_appendfieldslist)
 
     for item in appends:
         insertcursor.insertRow(item)
 
+
+if __name__ == '__main__':
+
+    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
+    # logger = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\log.txt'
+    plants = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb\plants_poly_append'
+    trees = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb\trees_poly_append'
+    #outfc = 'vegetation_2_testlog'
+    fieldmap = {'tree_diam': 'plant_diam', 'tree_type': 'plant_type'}
+    append(gdb,trees, plants,fieldmap)
