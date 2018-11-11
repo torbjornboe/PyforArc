@@ -14,7 +14,7 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
         ## path = pathlib.Path(from_fc) Pretty cool but not needed. Listfield works without arcpy.env.workspace
         ## arcpy.env.workspace = path.parent
         from_fields = arcpy.ListFields(from_fc)
-        from_fields = [(i.name,i.type) for i in from_fields if i.name not in [from_keyfield,'OBJECTID','Shape']]
+        from_fields = [(i.name,i.type) for i in from_fields if i.name not in [from_keyfield,'OBJECTID','ObjectID','Shape']]
     else:
         from_fields = [(i.name,i.type) for i in arcpy.ListFields(from_fc) if i.name in from_fields]
 

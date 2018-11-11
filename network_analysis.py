@@ -1,7 +1,16 @@
 import arcpy
 
+import joins
 
 def od_cost(network, outgdb, origins, destinations, **kwargs):
+
+	def get_na_layer_path(descr,alias):
+		for item in descr['children']:
+			try:
+				if item['aliasName'] == alias:
+					return item['dataElement']['catalogPath']
+			except KeyError:
+				print('make a base validataion class')
 	search_tolerance = 500
 	arcpy.env.overwriteOutput = True
 	arcpy.env.workspace = outgdb
@@ -13,8 +22,13 @@ def od_cost(network, outgdb, origins, destinations, **kwargs):
 	origins_layer_name = sublayer_names["Origins"]
 	destinations_layer_name = sublayer_names["Destinations"]
 	
-	# test
-	print(odcost_layer)
+	# arcpy.da.Describe(odcost_layer)
+	#'dataElement': {
+	#		'catalogPath': 'C:\\Users\\torbjorn.boe\\Google Drive\\Python\\PyforArc\\tests\\testdata.gdb\\ODCostMatrix2\\Origins2',
+	#		'FIDSet': None,
+	#		'aliasName': 'Origins',
+	#		'areaFieldName': '',
+	#		'baseName': 'Origins2',
 	
 	# test slutt
 
@@ -31,6 +45,13 @@ def od_cost(network, outgdb, origins, destinations, **kwargs):
                           field_mappings, search_tolerance)
 
 	arcpy.na.Solve(odcost_layer)
+
+	descr = arcpy.da.Describe(odcost_layer)
+	origings_path = get_na_layer_path(descr,'Origins')
+	destinations_path = get_na_layer_path(descr,'Destinations')
+	lines_path = get_na_layer_path(descr,'Lines')
+	print(origings_path, destinations_path, lines_path)
+	joins.join_1one1(origings_path,'OBJECTID',outgdb,lines_path,'OriginID','all')
 
     # layer_object.saveACopy(output_layer_file)
 
