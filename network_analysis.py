@@ -2,6 +2,8 @@ import arcpy
 
 import joins
 
+import pathlib
+
 def od_cost(network, outgdb, origins, destinations, **kwargs):
 
 	def get_na_layer_path(descr,alias):
@@ -11,6 +13,7 @@ def od_cost(network, outgdb, origins, destinations, **kwargs):
 					return item['dataElement']['catalogPath']
 			except KeyError:
 				print('make a base validataion class')
+
 	search_tolerance = 500
 	arcpy.env.overwriteOutput = True
 	arcpy.env.workspace = outgdb
@@ -48,10 +51,18 @@ def od_cost(network, outgdb, origins, destinations, **kwargs):
 
 	descr = arcpy.da.Describe(odcost_layer)
 	origings_path = get_na_layer_path(descr,'Origins')
+	origings_path_path = pathlib.Path(origings_path)
+	origings_path_name = origings_path_path.name
+
 	destinations_path = get_na_layer_path(descr,'Destinations')
 	lines_path = get_na_layer_path(descr,'Lines')
+	arcpy.AddXY_management(origings_path)
+	arcpy.AddXY_management(destinations_path)
 	print(origings_path, destinations_path, lines_path)
-	joins.join_1one1(origings_path,'OBJECTID',outgdb,lines_path,'OriginID','all')
+	joins.join_1one1(origings_path, 'ObjectID', outgdb, lines_path, 'OriginID', ['Name','POINT_X','POINT_X'])
+	joins.join_1one1(destinations_path, 'ObjectID', outgdb, lines_path, 'DestinationID', ['Name','POINT_X','POINT_X'])
+	joins.join_1one1(origins,'OBJECTID',outgdb,lines_path,f'Name_{origings_path_name}','all')
+
 
     # layer_object.saveACopy(output_layer_file)
 
