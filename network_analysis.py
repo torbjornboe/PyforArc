@@ -61,7 +61,7 @@ def od_cost(network, outgdb, origins, destinations, **kwargs):
 	print(origings_path, destinations_path, lines_path)
 	joins.join_1one1(origings_path, 'ObjectID', outgdb, lines_path, 'OriginID', ['Name','POINT_X','POINT_X'])
 	joins.join_1one1(destinations_path, 'ObjectID', outgdb, lines_path, 'DestinationID', ['Name','POINT_X','POINT_X'])
-	joins.join_1one1(origins,'OBJECTID',outgdb,lines_path,f'Name_{origings_path_name}','all')
+	joins.join_1one1(origins,'OBJECTID',outgdb,lines_path,f'Name_{origings_path_name}', from_fields = 'all')
 
 
     # layer_object.saveACopy(output_layer_file)
@@ -72,5 +72,5 @@ if __name__ == '__main__':
 	gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
 	origins = 'plants'
 	destinations = 'trees'
-	od_cost(nd,gdb,origins,destinations)
+	od_cost(nd,gdb,origins,destinations,)
 

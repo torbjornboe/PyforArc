@@ -8,9 +8,6 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
 
     arcpy.env.workspace = to_gdb
 
-    if type(from_fields) == str:
-        from_fields = from_fields.split(',')
-
     if from_fields == None:
         raise ValueError
         print('no value for from_fields, use keywort "all" or tuple')
@@ -19,14 +16,19 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
         ## path = pathlib.Path(from_fc) Pretty cool but not needed. Listfield works without arcpy.env.workspace
         ## arcpy.env.workspace = path.parent
         from_fields = arcpy.ListFields(from_fc)
-        from_fields = [(i.name,i.type) for i in from_fields if i.name not in [from_keyfield, 'OBJECTID','ObjectID','Shape']] # from_keyfield 'OBJECTID','ObjectID',
+        print(f'listFields from_fields: {from_fields}')
+        from_fields = [(i.name,i.type) for i in from_fields if i.name not in [from_keyfield, 'OBJECTID','ObjectID','Shape','SHAPE']] # from_keyfield 'OBJECTID','ObjectID',
     else:
+        if type(from_fields) == str:
+            from_fields = from_fields.split(',')
         from_fields = [(i.name,i.type) for i in arcpy.ListFields(from_fc) if i.name in from_fields]
 
 
     # add new fields
     all_tofields = {field.name:field.type for field in arcpy.ListFields(to_fc)}
+    print (f'all tofields: {all_tofields}')
     all_fromfields = {field.name:field.type for field in arcpy.ListFields(from_fc)}
+    print (f'all fromfields: {all_fromfields}')
     keyfield_type_equal = True
     if all_tofields[to_keyfield] != all_fromfields[from_keyfield]:
         keyfield_type_equal = False
@@ -76,7 +78,9 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
     print(valuedict)
 
     from_fields = from_fields[1:] # removing from_keyfield as this field does not exist in to_fc
+    print(f'from_fields {from_fields}')
     print(f'joining values from {from_fc} to {to_fc}')
+    print(f'new_fromfields: {new_fromfields}')
     print([to_keyfield]+new_fromfields)
     with arcpy.da.UpdateCursor(to_fc, [to_keyfield]+new_fromfields) as cursor: #from_fields has been transferred to to_fc
         for row in cursor:
