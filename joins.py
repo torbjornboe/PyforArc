@@ -41,9 +41,9 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
     for field in from_fields:
         if field[0] not in all_tofields:
             try:
-                print (f'adding {field} to {to_fc}')
-                arcpy.AddField_management(to_fc,field[0],field[1])
-                new_fromfields.append(field[0])
+                print (f'adding {field[0]}_{fromname} to {to_fc}')
+                arcpy.AddField_management(to_fc,f'{field[0]}_{fromname}',field[1])
+                new_fromfields.append(f'{field[0]}_{fromname}')
             except arcpy.ExecuteError as e:
                 print (f'{e}')
                 raise arcpy.ExecuteError
