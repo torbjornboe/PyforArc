@@ -7,3 +7,5 @@ CalculateRoutes.py
 CalculateRoutesLineGeometry.py
 intorfloat_textfields.py
 update_xy_field.py
+.idea/
+venv2/
