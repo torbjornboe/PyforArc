@@ -103,11 +103,29 @@ class Od_cost:
         joins.join_1one1(self.destinations,'OBJECTID',self.outgdb,self.lines_path,f'Name_{self.destinations_path_name}', from_fields = 'all')
         #arcpy.AddXY_management(self.destinations_path)
 
-    def multiple_origins(self, output):
+    def multiple_origins(self, outname, outgdb = self.outgdb):
         #make one point on origin for every line
+        arcpy.CreateFeatureclass_management(outgdb, outname, 'POINT', template = self.lines_path, spatial_reference = self.lines_path)
+        fieldx = [field.name for field in arcpy.ListFields(fc,'POINT_X_Origins*')]
+        fieldy = [field.name for field in arcpy.ListFields(fc,'POINT_Y_Origins*')]
+        fields = [field.name for field in arcpy.ListFields(outname) if field.name not in ['Shape','ObjectID']+fieldx+fieldy]
         
-        cursor = arcpy.da.InsertCursor(output)
-        pass
+        
+        insertcursor = arcpy.da.InsertCursor(outname, fields + ['@shape'])
+        searchcursor = arcpy.da.SearchCursor(self.lines, fields + fieldsxy)
+        inndata = []
+
+        for i,row in enumerate(searchcursor): #append fields exept POINT_X and POINT_Y
+            data = []
+            point = arcpy.Point(row[-2], row[-1])
+            geom = arcpy.PointGeometry(point)#dont think I need spatial ref
+            inndata.append(list(row[:-2]))
+            inndata[i].append(geom)
+
+        for item in inndata:
+            for row in insertcursor:
+                row.insertRow(item)
+                
 
     def summarize_on_origins(self):
         #make one point on orgin where line data is summarized
@@ -139,14 +157,14 @@ class Od_cost:
 ##    # layer_object.saveACopy(output_layer_file)
 
 
-if __name__ == '__main__':
-    nd = r'C:\temp_data\vegnett_RUTEPL_180628.gdb\Route\ERFKPS_ND'
-    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
-    origins = 'plants'
-    destinations = 'trees'
-    odcost = Od_cost(nd,gdb,line_shape = 'STRAIGHT_LINES')
-    odcost.add_origins(origins,'OBJECTID',500)
-    odcost.add_destinations(destinations,'OBJECTID',500)
-    odcost.solve()
-    odcost.origins_to_lines()
-    odcost.destinations_to_lines()
+##if __name__ == '__main__':
+##    nd = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_odcost.gdb\test_na\test_na_ND'
+##    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
+##    origins = 'plants'
+##    destinations = 'trees'
+##    odcost = Od_cost(nd,gdb,line_shape = 'STRAIGHT_LINES', travel_mode = 'walktime', cutoff = 10, layer_name = 'testname', number_of_destinations_to_find = 1)
+##    odcost.add_origins(origins,'OBJECTID',500)
+##    odcost.add_destinations(destinations,'OBJECTID',500)
+##    odcost.solve()
+##    odcost.origins_to_lines()
+##    odcost.destinations_to_lines()
