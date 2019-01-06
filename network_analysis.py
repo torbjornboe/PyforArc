@@ -7,7 +7,17 @@ import pathlib
 import os
 
 class Od_cost:
-
+    """
+    this class makes a OD-cost matrikx layer and featureclasses from the solve
+    is stored in outgdb.
+    network -- string, path to network layer
+    outgdb -- string, path to outgdb
+    optional argurments:
+    travel_mode -- string, name of travelmode defined in network layer
+    cutoff -- float or integer, max cost (distance, minutes) for calculation
+    number_of_destinations -- integer, number of destinations to find. Defaults to all
+    
+    """
     def __init__(self,network, outgdb, **kwargs):
 
         def __kvargs_to_full_dict__(kwargs):
