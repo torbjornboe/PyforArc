@@ -16,7 +16,10 @@ class Od_cost:
     travel_mode -- string, name of travelmode defined in network layer
     cutoff -- float or integer, max cost (distance, minutes) for calculation
     number_of_destinations -- integer, number of destinations to find. Defaults to all
-    
+    time_of_day -- string, date and time
+    line_shape -- string, NO_LINES or STRAIGHT_LINES 
+    time_zone -- string, LOCAL_TIME_AT_LOCATIONS or UTC
+    accumulate_attributes -- list, List of cost attributes to be accumulated during analysis.  
     """
     def __init__(self,network, outgdb, **kwargs):
 
@@ -54,6 +57,11 @@ class Od_cost:
 
 
     def add_origins(self,origins,identifier,search_tolerance):
+        """
+        origins -- string, path to origin featureclass
+        identifier -- string, field holding uniqe identifying values
+        search_tolerance -- integer, searchtolerance for conecting origin to network
+        """
         self.origins_identifierfield = identifier
         self.origins = origins
         self.origins_search_tolerance = search_tolerance
@@ -63,6 +71,11 @@ class Od_cost:
                           self.origins_search_tolerance)
 
     def add_destinations(self,destinations,identifier,searchtolerance):
+        """
+        origins -- string, path to origin featureclass
+        identifier -- string, field holding uniqe identifying values
+        search_tolerance -- integer, searchtolerance for conecting origin to network
+        """
         self.destinations = destinations
         self.destinations_identifierfield = identifier
         self.destinations_search_tolerance = searchtolerance
@@ -71,10 +84,18 @@ class Od_cost:
         arcpy.na.AddLocations(self.odcost_layer, self.destinations_layer_name, self.destinations, field_mappings, self.destinations_search_tolerance)
 
     def solve(self):
+        """
+        solves odcost_layer
+        """
         arcpy.na.Solve(self.odcost_layer)
         # except arcgisscripting.ExecuteError ?
 
     def __get_na_layer_path__(self,descr, alias):
+        """
+        internal method for getting layerpath from arcpy.da.Describe dictionary
+        descr -- dictionary, arcpy.da.Describe dictionary on odcost_layer
+        alias -- string, aliasname of alias the object path is wanted for
+        """
         for item in descr['children']:
             try:
                 if item['aliasName'] == alias:
@@ -85,6 +106,9 @@ class Od_cost:
     
 
     def origins_to_lines(self):
+        """
+        joins origins to lines and adds POINT_X, POINT_Y fields
+        """
         descr = arcpy.da.Describe(self.odcost_layer)
         self.lines_path = self.__get_na_layer_path__(descr,'Lines')
         
@@ -100,6 +124,9 @@ class Od_cost:
         
 
     def destinations_to_lines(self):
+        """
+        joins destinations  to lines and adds POINT_X, POINT_Y fields
+        """
 
         descr = arcpy.da.Describe(self.odcost_layer)
         self.lines_path = self.__get_na_layer_path__(descr,'Lines')
@@ -114,6 +141,12 @@ class Od_cost:
         #arcpy.AddXY_management(self.destinations_path)
 
     def multiple_origins(self, outname, outgdb, overwrite = True):
+        """"
+        Makes a featureclass with one "origin" for every line. Use Dissolve for generating statistics and reduce to one feature.
+        outgdb -- string, path to gdb for placeing result
+        outname -- string, name of result featureclass
+        overwrite -- BOOL, True or False. Defaults to True. Result can be overwriten.
+        """
         #make one point on origin for every line
         arcpy.env.overwriteOutput = overwrite
         arcpy.CreateFeatureclass_management(outgdb, outname, 'POINT', template = self.lines_path, spatial_reference = self.lines_path)
