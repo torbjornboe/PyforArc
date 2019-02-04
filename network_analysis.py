@@ -8,7 +8,7 @@ import os
 
 class Od_cost:
     """
-    this class makes a OD-cost matrikx layer and featureclasses from the solve
+    this class makes a OD-cost matrix layer. Featureclasses from the solve
     is stored in outgdb.
     network -- string, path to network layer
     outgdb -- string, path to outgdb
@@ -19,7 +19,16 @@ class Od_cost:
     time_of_day -- string, date and time
     line_shape -- string, NO_LINES or STRAIGHT_LINES 
     time_zone -- string, LOCAL_TIME_AT_LOCATIONS or UTC
-    accumulate_attributes -- list, List of cost attributes to be accumulated during analysis.  
+    accumulate_attributes -- list, List of cost attributes to be accumulated during analysis.
+
+    Methods:
+    add_origins -- adds origins. Must be run before solve
+    add_destinations -- adds destinations. Must be run before solve
+    solve -- run solve
+    origins_to_lines -- adds xy fields to origins and joins origins to lines
+    destinations_to_lines -- adds xy fields to destinations and joins destinations to lines
+    multiple_origins -- makes a point for every unike origin-line pair. This can be further prosessed
+    with e.g. dissolve to make aggregations.
     """
     def __init__(self,network, outgdb, **kwargs):
 
@@ -52,6 +61,7 @@ class Od_cost:
         self.sublayer_names = arcpy.na.GetNAClassNames(self.odcost_layer)
         self.origins_layer_name = self.sublayer_names["Origins"]
         self.destinations_layer_name = self.sublayer_names["Destinations"]
+        self.__solve = False
         
         
 
@@ -88,6 +98,7 @@ class Od_cost:
         solves odcost_layer
         """
         arcpy.na.Solve(self.odcost_layer)
+        self.__solve = True
         # except arcgisscripting.ExecuteError ?
 
     def __get_na_layer_path__(self,descr, alias):
@@ -109,6 +120,9 @@ class Od_cost:
         """
         joins origins to lines and adds POINT_X, POINT_Y fields
         """
+        if not self.__solve:
+            print('run solve first')
+            raise TypeError
         descr = arcpy.da.Describe(self.odcost_layer)
         self.lines_path = self.__get_na_layer_path__(descr,'Lines')
         
@@ -127,7 +141,9 @@ class Od_cost:
         """
         joins destinations  to lines and adds POINT_X, POINT_Y fields
         """
-
+        if not self.__solve:
+            print('run solve first')
+            raise TypeError
         descr = arcpy.da.Describe(self.odcost_layer)
         self.lines_path = self.__get_na_layer_path__(descr,'Lines')
         
@@ -147,6 +163,9 @@ class Od_cost:
         outname -- string, name of result featureclass
         overwrite -- BOOL, True or False. Defaults to True. Result can be overwriten.
         """
+        if not self.__solve:
+            print('run solve first')
+            raise TypeError
         #make one point on origin for every line
         arcpy.env.overwriteOutput = overwrite
         arcpy.CreateFeatureclass_management(outgdb, outname, 'POINT', template = self.lines_path, spatial_reference = self.lines_path)
