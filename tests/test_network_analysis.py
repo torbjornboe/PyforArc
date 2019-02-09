@@ -11,4 +11,4 @@ if __name__ == '__main__':
     odcost.solve()
     odcost.origins_to_lines()
     odcost.destinations_to_lines()
-    odcost.multiple_origins('multipleorigins',gdb)
+    odcost.multiple_origins('multipleorigins2',gdb)

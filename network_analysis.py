@@ -63,7 +63,6 @@ class Od_cost:
         self.destinations_layer_name = self.sublayer_names["Destinations"]
         self.__solve = False
         
-        
 
 
     def add_origins(self,origins,identifier,search_tolerance):
@@ -186,7 +185,7 @@ class Od_cost:
             inndata[i].append(geom)
 
         for item in inndata:
-            print(item)
+            #print(item)
             insertcursor.insertRow(item)
 
 

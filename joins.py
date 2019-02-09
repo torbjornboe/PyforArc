@@ -75,13 +75,13 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
     else:
         valuedict = {str(r[0]):(r[1:]) for r in arcpy.da.SearchCursor(from_fc, from_fields)}
 
-    print(valuedict)
+    #print(valuedict)
 
     from_fields = from_fields[1:] # removing from_keyfield as this field does not exist in to_fc
-    print(f'from_fields {from_fields}')
-    print(f'joining values from {from_fc} to {to_fc}')
-    print(f'new_fromfields: {new_fromfields}')
-    print([to_keyfield]+new_fromfields)
+    #print(f'from_fields {from_fields}')
+    #print(f'joining values from {from_fc} to {to_fc}')
+    #print(f'new_fromfields: {new_fromfields}')
+    #print([to_keyfield]+new_fromfields)
     with arcpy.da.UpdateCursor(to_fc, [to_keyfield]+new_fromfields) as cursor: #from_fields has been transferred to to_fc
         for row in cursor:
             # store the joinvalue of the row being updated in a keyvalue variable
@@ -91,7 +91,7 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
             try: # transfer the value stored under the keyValue from the dictionary to the updated field.
                 for n,item in enumerate(from_fields,1):
                     row[n] = valuedict[keyvalue][n-1]
-                    print(f'row is {valuedict[keyvalue][n-1]}')
+                    #print(f'row is {valuedict[keyvalue][n-1]}')
                 cursor.updateRow(row)
             except KeyError:
                 print('keyerror')
@@ -101,16 +101,6 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
 
 
 
-if __name__ == '__main__':
-
-    fromfc = r'C:\Users\torboe_\Documents\ArcGIS\Projects\DefaultProject\DefaultProject.gdb\politi'
-    fromfieldlist = "all"
-    togdb = r'C:\Users\torboe_\Documents\ArcGIS\Projects\DefaultProject\DefaultProject.gdb'
-    tofc = 'skurk'
-    to_keyfield = 'keyField'
-    from_keyfield = 'key'
-    fromfields = ['Stasjon']
-    join_1one1(fromfc,from_keyfield,togdb,tofc,to_keyfield,from_fields = fromfields)
 
 
 
