@@ -17,16 +17,16 @@ def table_to_dataframe(fc, workspace = None, index = None):
     if index:
         index = [row[0] for row in arcpy.da.SearchCursor(fc,index)]
         
-    data = [list(row) for row in arcpy.da.SearchCursor(fc,fields)]
-    df = pd.DataFrame(data, index = index, columns = fields)
+    data = [list(row) for row in arcpy.da.SearchCursor(fc,fields + ['SHAPE@JSON'])]
+    df = pd.DataFrame(data, index = index, columns = fields + ['SHAPE@JSON'])
     
     for field in fields:
         df[field].astype(map_tbl_to_df[types[field]])
+    print(df['SHAPE@JSON'])
     return df
     
 
 def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAPE', workspace = None, spatial_reference = None, overwrite = True):
-    arcpy.env.overwriteOutput = overwrite
     geometry = geometry.lower()
     allowed_geometry = ['polygon','polyline','point']
     if geometry not in allowed_geometry:
@@ -34,6 +34,7 @@ def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAP
         raise TypeError
     if workspace:
         arcpy.env.workspace = workspace
+        arcpy.env.overwriteOutput = overwrite
     if spatial_reference:
         try:
             p = pathlib.Path(spatial_reference)
@@ -52,8 +53,8 @@ def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAP
     reserved = ['OBJECTID', 'SHAPE',]
     for column in columns:
         if column.upper() in reserved:
-            fields.append((f'{column}_',map_df_to_tbl[df[column].dtype.kind]))
-            #new_columns.append(column)
+            fields.append((f'{column}_',map_df_to_tbl[df[column].dtype.kind]))# adding underscore
+            # new_columns.append(column)
         else:
             fields.append((column,map_df_to_tbl[df[column].dtype.kind]))
             
@@ -67,12 +68,14 @@ def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAP
     #df = df[new_columns]
     for i,row in df.iterrows():
         if geometry == 'point':
-            point = arcpy.Point(row[geometrycolumn][1], row[geometrycolumn][0])
+            point = arcpy.Point(row[geometrycolumn][0], row[geometrycolumn][1])
             #print(point)
             arc_geometry = arcpy.PointGeometry(point)
         if geometry == 'polygon':
+            print(row[geometrycolumn])
             array = arcpy.Array(row[geometrycolumn])#possibly need to go innto tuple
-            arc_geometry = arcpy.Polygon(array)
+            # arc_geometry = arcpy.Polygon(array)
+            arc_geometry = row['shape@']
         if geometry == 'polyline':
             array = arcpy.Array(row[geometrycolumn])#needs testing.
             arc_geometry = arcpy.Polyline(array)
@@ -101,9 +104,10 @@ def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAP
     
 if __name__ == '__main__':
     gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
-    origins = 'plants'
+    origins = 'plants_poly'
     df = table_to_dataframe(origins,gdb,'OBJECTID')#'OBJECTID'
 ##    print(df.head())
 ##    print(df.index)
-
-    dataframe_to_featureclass(df, 'df_to_fc', 'POINT', workspace = gdb, spatial_reference = 25832)
+    df['superdiam'] = df['plant_diam'] * 5
+    df.to_csv(r'C:\temp_data\df_to_poly2.csv')
+    #dataframe_to_featureclass(df, 'df_to_fc_poly2', 'POLYGON', workspace = gdb, spatial_reference = 25832)
