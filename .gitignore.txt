@@ -9,3 +9,4 @@ intorfloat_textfields.py
 update_xy_field.py
 .idea/
 venv2/
+.idea\
