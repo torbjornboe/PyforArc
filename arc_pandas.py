@@ -1,5 +1,4 @@
 import json
-import pathlib
 
 import arcpy
 import pandas as pd
@@ -10,6 +9,15 @@ map_tbl_to_df = {'String':'U', 'Float': 'f', 'Double': 'f', 'Short': 'i', 'Long'
 map_df_to_tbl = {'U': 'String', 'f': 'Float', 'i': 'Long', 'M': 'Date', 'O': 'String'}
 
 def table_to_dataframe(fc, workspace = None, index = None):
+    """Esri .gdb table to Pandas dataframe
+
+
+    fc -- string, path to table\featureclass or just name if workspace is given
+    workspace -- string, path to .gdb
+    index -- string, name of field to use as index
+    return -- object, pandas.DataFrame
+    """
+
     if workspace:
         arcpy.env.workspace = workspace
         
@@ -29,7 +37,16 @@ def table_to_dataframe(fc, workspace = None, index = None):
     return df
     
 
-def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAPE@JSON', workspace = None, overwrite = True):
+def dataframe_to_featureclass(df, featureclass, geometry, workspace, geometrycolumn = 'SHAPE@JSON', overwrite = False):
+    """Dataframe containing geometry as SHAPE@JSON json
+
+    df -- pandas.DataFrame, dataframe containing as a ESRI SHAPE@JSON json
+    featureclass -- string, name of featureclass
+    workspace -- string, path to .gdb
+    geometry -- string, <polygon, polyline, point>
+    geometrycolumn -- string, columns holding SHAPE@JSON json
+    overwrite -- BOOL, <True or False>
+    """
     geometry = geometry.lower()
     allowed_geometry = ['polygon','polyline','point']
     if geometry not in allowed_geometry:
@@ -86,32 +103,4 @@ def dataframe_to_featureclass(df, featureclass, geometry, geometrycolumn = 'SHAP
                 val = str(val)
             nrow.append(val)
         payload = nrow + arc_geometry
-        #print(payload)
-        #print(type(payload))
         icursor.insertRow(payload)
-            
-            
-        #icursor.insertRow((row.iloc[:].values))# + geometry. need logic for geometrytype
-
-    
-    
-
-    
-    
-
-    
-    
-#if __name__ == '__main__':
-    #gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\testdata.gdb'
- #   gdb = r'C:\temp_data\Odc_framtidig.gdb'
-    #origins = 'plants_line'
-    #df = table_to_dataframe(origins,gdb,'OBJECTID')#'OBJECTID'
-  #  fc = 'F_Gange_30_min_Hestevanen'
-    #df = table_to_dataframe(origins, gdb, 'OBJECTID')  # 'OBJECTID'
-   # df = table_to_dataframe(fc, gdb, 'OBJECTID')  # 'OBJECTID'
-
-    #print(df.head())
-##    print(df.index)
-    # df['superdiam'] = df['plant_diam'] * 5
-    # df.to_csv(r'C:\temp_data\df_to_poly2.csv')
-    # dataframe_to_featureclass(df, 'df_to_fc_LINE', 'POLYLINE', workspace = gdb)
