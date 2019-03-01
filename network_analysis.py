@@ -189,4 +189,59 @@ class Od_cost:
             insertcursor.insertRow(item)
 
 
+class Route:
+    """
+    Makes a arcpy.na.MakeRouteAnalysisLayer
+    Method routepairs -- makes routes based on origins-destinationpairs, and optional via-points
+    """
+
+    def __init__(self, network, outgdb, **kwargs):
+        self.network = network
+        self.outgdb = outgdb
+        # arcpy.env.workspace = self.outgdb
+
+        ral = arcpy.na.MakeRouteAnalysisLayer(self.network)
+        self.routelayer = ral.getOutput(0)
+        self.sublayer_names = arcpy.na.GetNAClassNames(self.routelayer)
+        self.stops_layer_name = self.sublayer_names["Stops"]
+        self.routes_layer_name = self.sublayer_names["Routes"]
+
+    def routepairs(self, origins, originskey, destinations, destinationskey, result_fc, via=None, viakey=None,
+                   overwrite=False):
+        """
+        origins -- string, path to origins featureclass.
+        originskey -- string, fieldname holding key common with destinationkey.
+        destinations -- string, path to destinations featureclass.
+        destinationskey -- string, fieldname holding key common with originkey
+        result_fc, -- string, path to result featureclass.
+        via, -- string (optional), path to viapoints featurecalss
+        viakey, -- string (optional), fieldname holding key common with origin and destionation
+        overwrite, -- BOL (optional), overwrite result_fc if set to True
+        """
+        arcpy.env.overwriteOutput = overwrite
+        # mapping origins and adding
+        field_mappings = arcpy.na.NAClassFieldMappings(self.routelayer, self.stops_layer_name)
+        field_mappings["RouteName"].mappedFieldName = originskey
+        arcpy.na.AddLocations(self.routelayer, self.stops_layer_name, origins,
+                              field_mappings, "")  # kwargs for add locations
+        # adding via points if any
+        if via:
+            if not viakey:
+                print(f'{via} was given as via-points but no field was spesified as viakey')
+                raise ValueError
+            print('adding via-points')
+            field_mappings = arcpy.na.NAClassFieldMappings(self.routelayer, self.stops_layer_name)
+            field_mappings["RouteName"].mappedFieldName = viakey
+            arcpy.na.AddLocations(self.routelayer, self.stops_layer_name, via,
+                                  field_mappings, "")  # kwargs for add locations
+        # mapping destinations
+        field_mappings = arcpy.na.NAClassFieldMappings(self.routelayer, self.stops_layer_name)
+        field_mappings["RouteName"].mappedFieldName = destinationskey
+        arcpy.na.AddLocations(self.routelayer, self.stops_layer_name, destinations,
+                              field_mappings, "")  # kwargs for add locations
+
+        arcpy.na.Solve(self.routelayer)
+        routes_sublayer = self.routelayer.listLayers(self.routes_layer_name)[0]
+        arcpy.management.CopyFeatures(routes_sublayer, result_fc)
+
 
