@@ -4,7 +4,6 @@ import joins
 
 import pathlib
 
-import os
 
 class Od_cost:
     """
@@ -56,7 +55,10 @@ class Od_cost:
             self.time_zone = self.given_matrixlayer_parameters['time_zone']
             self.line_shape = self.given_matrixlayer_parameters['line_shape']
             self.accumulate_attributes = self.given_matrixlayer_parameters['accumulate_attributes']
-        self.matrixlayer = arcpy.na.MakeODCostMatrixAnalysisLayer(network, self.layer_name, self.travel_mode, self.cutoff, self.number_of_destinations_to_find, self.time_of_day, self.time_zone, self.line_shape, self.accumulate_attributes)
+        self.matrixlayer = arcpy.na.MakeODCostMatrixAnalysisLayer(network, self.layer_name, self.travel_mode,
+                                                                  self.cutoff, self.number_of_destinations_to_find,
+                                                                  self.time_of_day, self.time_zone, self.line_shape,
+                                                                  self.accumulate_attributes)
         self.odcost_layer = self.matrixlayer.getOutput(0)
         self.sublayer_names = arcpy.na.GetNAClassNames(self.odcost_layer)
         self.origins_layer_name = self.sublayer_names["Origins"]
@@ -190,17 +192,42 @@ class Od_cost:
 
 
 class Route:
-    """
-    Makes a arcpy.na.MakeRouteAnalysisLayer
-    Method routepairs -- makes routes based on origins-destinationpairs, and optional via-points
+    """Makes a arcpy.na.MakeRouteAnalysisLayer
+
+    network -- string, path to network dataset
+    outgdb -- string, path to .gdb to place Route
+
+
+    Methods:
+    routepairs -- makes routes based on origins-destinationpairs, and optional via-points
     """
 
     def __init__(self, network, outgdb, **kwargs):
+
+        def __kvargs_to_full_dict__(kwargs):
+            vals =  {}
+            for i in self.valid_RouteAnalysislayer_parameters:
+                try:
+                    vals[i] = kwargs[i]
+                except KeyError:
+                    vals[i] = None
+            return vals
+
+        self.valid_RouteAnalysisLayer_parameters = ['layer_name', 'travel_mode', 'sequence', 'time_of_day', 'time_zone',
+                                                    'line_shape', 'accumulate_attributes']
         self.network = network
         self.outgdb = outgdb
         # arcpy.env.workspace = self.outgdb
-
-        ral = arcpy.na.MakeRouteAnalysisLayer(self.network)
+        if kwargs:
+            self.given_RouteAnalysisLayer_parameters = __kvargs_to_full_dict__(kwargs)
+            self.layer_name = self.given_RouteAnalysisLayer_parameters['layer_name']
+            self.travel_mode = self.given_RouteAnalysisLayer_parameters['travel_mode']
+            self.time_of_day = self.given_RouteAnalysisLayer_parameters['time_of_day']
+            self.time_zone = self.given_RouteAnalysisLayer_parameters['time_zone']
+            self.line_shape = self.given_RouteAnalysisLayer_parameters['line_shape']
+            self.accumulate_attributes = self.given_RouteAnalysisLayer_parameters['accumulate_attributes']
+        ral = arcpy.na.MakeRouteAnalysisLayer(self.network, self.layer_name, self.travel_mode, self.time_of_day,
+                                              self.time_zone, self.line_shape, self.accumulate_attributes)
         self.routelayer = ral.getOutput(0)
         self.sublayer_names = arcpy.na.GetNAClassNames(self.routelayer)
         self.stops_layer_name = self.sublayer_names["Stops"]
@@ -245,3 +272,57 @@ class Route:
         arcpy.management.CopyFeatures(routes_sublayer, result_fc)
 
 
+def countlines(gdb, linefc, outfc, countfield= 'linecount'):
+
+    """count identical lines in linefc and return dissolve with count
+
+    gdb -- string, path to .gdb where linefc exists
+    linefc -- string, name of line featureclass in gdb to count
+    outfc -- string, path or name of dissolved output featureclass. If not path, result is placed in gdb.
+    """
+
+    def geometry_to_string(geometry):
+        jgeometry = json.loads(geometry.JSON)
+        paths = jgeometry['paths']
+        strings = []
+        for i in paths[0]:
+            for item in i:
+                strings.append(str(item))
+        stringify = ''.join(strings)
+        return stringify
+
+    arcpy.env.workspace = gdb
+    all_lines = [row[0] for row in arcpy.da.SearchCursor(linefc, 'shape@')]
+    counter = Counter()
+    counted_lines = {}
+    for geom in (all_lines):
+        geometry_string = geometry_to_string(geom)
+        counter.update([geometry_string])
+        counted_lines[geometry_string] = geom
+
+    outfc_p = pathlib.Path(outfc)
+    if p.is_dir():
+        outpath = outfc_p.parent
+        outname = outfc_p.name
+    else:
+        outpath = gdb
+        outname = outfc
+
+    arcpy.CreateFeatureclass_management(outpath, outname, 'polyline', spatial_reference= outfc )
+    arcpy.AddField_management(outpath, countfield, 'LONG')
+
+    insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield])
+    for sgeom, geom in counted_lines.items():
+        insertcursor.insertRow((geom, counter[sgeom]))
+    del insertcursor
+
+
+
+if __name__ == '__main__':
+    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb'
+
+
+
+
+
+    
