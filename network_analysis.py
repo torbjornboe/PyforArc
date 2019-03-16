@@ -2,7 +2,8 @@ import arcpy
 
 import joins
 
-import pathlib
+import pathlib, json, os
+from collections import Counter
 
 
 class Od_cost:
@@ -204,9 +205,9 @@ class Route:
 
     def __init__(self, network, outgdb, **kwargs):
 
-        def __kvargs_to_full_dict__(kwargs):
+        def __kvargs_to_full_dict__(valid_RouteAnalysisLayer_parameters, kwargs):
             vals =  {}
-            for i in self.valid_RouteAnalysislayer_parameters:
+            for i in valid_RouteAnalysisLayer_parameters:
                 try:
                     vals[i] = kwargs[i]
                 except KeyError:
@@ -216,18 +217,28 @@ class Route:
         self.valid_RouteAnalysisLayer_parameters = ['layer_name', 'travel_mode', 'sequence', 'time_of_day', 'time_zone',
                                                     'line_shape', 'accumulate_attributes']
         self.network = network
+
+        ##
+        self.network_prj = arcpy.Describe(self.network).spatialReference
+        print(self.network_prj.name)
+        ##
+
         self.outgdb = outgdb
-        # arcpy.env.workspace = self.outgdb
-        if kwargs:
-            self.given_RouteAnalysisLayer_parameters = __kvargs_to_full_dict__(kwargs)
-            self.layer_name = self.given_RouteAnalysisLayer_parameters['layer_name']
-            self.travel_mode = self.given_RouteAnalysisLayer_parameters['travel_mode']
-            self.time_of_day = self.given_RouteAnalysisLayer_parameters['time_of_day']
-            self.time_zone = self.given_RouteAnalysisLayer_parameters['time_zone']
-            self.line_shape = self.given_RouteAnalysisLayer_parameters['line_shape']
-            self.accumulate_attributes = self.given_RouteAnalysisLayer_parameters['accumulate_attributes']
+        arcpy.env.workspace = self.outgdb
+        #if kwargs:
+        self.given_RouteAnalysisLayer_parameters = __kvargs_to_full_dict__(self.valid_RouteAnalysisLayer_parameters, kwargs)
+        self.layer_name = self.given_RouteAnalysisLayer_parameters['layer_name']
+        self.travel_mode = self.given_RouteAnalysisLayer_parameters['travel_mode']
+        self.time_of_day = self.given_RouteAnalysisLayer_parameters['time_of_day']
+        self.time_zone = self.given_RouteAnalysisLayer_parameters['time_zone']
+        self.line_shape = self.given_RouteAnalysisLayer_parameters['line_shape']
+        self.accumulate_attributes = self.given_RouteAnalysisLayer_parameters['accumulate_attributes']
+        print(self.layer_name)
         ral = arcpy.na.MakeRouteAnalysisLayer(self.network, self.layer_name, self.travel_mode, self.time_of_day,
                                               self.time_zone, self.line_shape, self.accumulate_attributes)
+        # else:
+          # ral = arcpy.na.MakeRouteAnalysisLayer(self.network)
+
         self.routelayer = ral.getOutput(0)
         self.sublayer_names = arcpy.na.GetNAClassNames(self.routelayer)
         self.stops_layer_name = self.sublayer_names["Stops"]
@@ -245,6 +256,7 @@ class Route:
         viakey, -- string (optional), fieldname holding key common with origin and destionation
         overwrite, -- BOL (optional), overwrite result_fc if set to True
         """
+
         arcpy.env.overwriteOutput = overwrite
         # mapping origins and adding
         field_mappings = arcpy.na.NAClassFieldMappings(self.routelayer, self.stops_layer_name)
@@ -266,13 +278,15 @@ class Route:
         field_mappings["RouteName"].mappedFieldName = destinationskey
         arcpy.na.AddLocations(self.routelayer, self.stops_layer_name, destinations,
                               field_mappings, "")  # kwargs for add locations
-
-        arcpy.na.Solve(self.routelayer)
+        try:
+            arcpy.na.Solve(self.routelayer)
+        except arcpy.ExecuteError as e:
+            print (e)
         routes_sublayer = self.routelayer.listLayers(self.routes_layer_name)[0]
         arcpy.management.CopyFeatures(routes_sublayer, result_fc)
 
 
-def countlines(gdb, linefc, outfc, countfield= 'linecount'):
+def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
 
     """count identical lines in linefc and return dissolve with count
 
@@ -291,9 +305,17 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount'):
         stringify = ''.join(strings)
         return stringify
 
+
     arcpy.env.workspace = gdb
-    all_lines = [row[0] for row in arcpy.da.SearchCursor(linefc, 'shape@')]
-    counter = Counter()
+    arcpy.env.overwriteOutput = overwrite
+
+    lines_split = f'{linefc}_split'
+    arcpy.SplitLine_management(linefc,lines_split)
+    all_lines = [row[0] for row in arcpy.da.SearchCursor(lines_split, 'shape@')]
+
+    global counter
+    global counted_lines
+    counter  = Counter()
     counted_lines = {}
     for geom in (all_lines):
         geometry_string = geometry_to_string(geom)
@@ -301,28 +323,35 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount'):
         counted_lines[geometry_string] = geom
 
     outfc_p = pathlib.Path(outfc)
-    if p.is_dir():
+    if outfc_p.is_dir():
+        print('outfc is dir')
         outpath = outfc_p.parent
         outname = outfc_p.name
     else:
         outpath = gdb
         outname = outfc
+    print(outpath, outname)
+    arcpy.CreateFeatureclass_management(outpath, outname, 'polyline', spatial_reference= linefc )
+    arcpy.AddField_management(os.path.join(outpath, outname), countfield, 'LONG')
+    # for testing
+    arcpy.AddField_management(os.path.join(outpath, outname), 'geomstring', 'TEXT')
 
-    arcpy.CreateFeatureclass_management(outpath, outname, 'polyline', spatial_reference= outfc )
-    arcpy.AddField_management(outpath, countfield, 'LONG')
-
-    insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield])
+    insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield, 'geomstring' ])
     for sgeom, geom in counted_lines.items():
-        insertcursor.insertRow((geom, counter[sgeom]))
+        insertcursor.insertRow((geom, counter[sgeom], sgeom))
     del insertcursor
 
 
 
 if __name__ == '__main__':
-    gdb = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb'
-
-
-
-
-
-    
+    resultgdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb'
+    nd = r'C:\temp_data\vegnett_RUTEPL_181214.gdb\Route\ERFKPS_ND'
+    resultfile = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb\routelines'
+    origins = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Bosted'
+    destinations = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Arbeidssted'
+    countedlines = 'countedlines'# os.path.join(resultgdb,'countedlines')
+    # routelines = 'routelines'
+    unikid = 'UnikID'
+    route = Route(nd, resultgdb)
+    route.routepairs(origins, unikid, destinations, unikid, resultfile, overwrite=True)
+    countlines(resultgdb, resultfile, countedlines, 'countedlines', overwrite=True)
