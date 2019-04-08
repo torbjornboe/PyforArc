@@ -305,6 +305,9 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
         stringify = ''.join(strings)
         return stringify
 
+    def equalitycheck():
+
+        pass
 
     arcpy.env.workspace = gdb
     arcpy.env.overwriteOutput = overwrite
@@ -313,14 +316,26 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     arcpy.SplitLine_management(linefc,lines_split)
     all_lines = [row[0] for row in arcpy.da.SearchCursor(lines_split, 'shape@')]
 
-    global counter
-    global counted_lines
+   # global counter
+    #global counted_lines
     counter  = Counter()
     counted_lines = {}
-    for geom in (all_lines):
-        geometry_string = geometry_to_string(geom)
-        counter.update([geometry_string])
-        counted_lines[geometry_string] = geom
+
+   # for geom in (all_lines):
+      #  geometry_string = geometry_to_string(geom)
+        #counter.update([geometry_string])
+        #counted_lines[geometry_string] = geom
+
+    unike = { }
+    with arcpy.da.SearchCursor(lines_split,'shape@') as cursor:
+        for i, row in (enumerate(cursor)):
+            collect = []
+            for ii, line in enumerate(all_lines):
+                if row[0].equals(line):
+                    unike[i] = row[0]
+                    counter.update([i])
+                    collect.append(ii)
+            all_lines = [geom for i, geom in enumerate(all_lines) if i not in collect]
 
     outfc_p = pathlib.Path(outfc)
     if outfc_p.is_dir():
@@ -334,11 +349,12 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     arcpy.CreateFeatureclass_management(outpath, outname, 'polyline', spatial_reference= linefc )
     arcpy.AddField_management(os.path.join(outpath, outname), countfield, 'LONG')
     # for testing
-    arcpy.AddField_management(os.path.join(outpath, outname), 'geomstring', 'TEXT')
+    #arcpy.AddField_management(os.path.join(outpath, outname), 'geomstring', 'TEXT')
 
-    insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield, 'geomstring' ])
-    for sgeom, geom in counted_lines.items():
-        insertcursor.insertRow((geom, counter[sgeom], sgeom))
+    insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield, ])
+
+    for  k,v in unike.items():
+        insertcursor.insertRow((v, counter[k]))
     del insertcursor
 
 
