@@ -333,18 +333,3 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     for  k,v in unike.items():
         insertcursor.insertRow((v, counter[k]))
     del insertcursor
-
-
-
-if __name__ == '__main__':
-    resultgdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb'
-    nd = r'C:\temp_data\vegnett_RUTEPL_181214.gdb\Route\ERFKPS_ND'
-    resultfile = 'routelines' # r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb\routelines'
-    origins = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Bosted'
-    destinations = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Arbeidssted'
-    countedlines = 'countedlines'# os.path.join(resultgdb,'countedlines')
-    # routelines = 'routelines'
-    unikid = 'UnikID'
-    route = Route(nd, resultgdb)
-    route.routepairs(origins, unikid, destinations, unikid, resultfile, overwrite=True)
-    countlines(resultgdb, resultfile, countedlines, 'countedlines', overwrite=True)
