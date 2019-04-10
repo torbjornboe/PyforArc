@@ -10,3 +10,4 @@ update_xy_field.py
 .idea/
 venv2/
 .idea\
+tests\
