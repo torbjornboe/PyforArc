@@ -316,17 +316,10 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     arcpy.SplitLine_management(linefc,lines_split)
     all_lines = [row[0] for row in arcpy.da.SearchCursor(lines_split, 'shape@')]
 
-   # global counter
-    #global counted_lines
     counter  = Counter()
     counted_lines = {}
-
-   # for geom in (all_lines):
-      #  geometry_string = geometry_to_string(geom)
-        #counter.update([geometry_string])
-        #counted_lines[geometry_string] = geom
-
     unike = { }
+
     with arcpy.da.SearchCursor(lines_split,'shape@') as cursor:
         for i, row in (enumerate(cursor)):
             collect = []
@@ -348,8 +341,6 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     print(outpath, outname)
     arcpy.CreateFeatureclass_management(outpath, outname, 'polyline', spatial_reference= linefc )
     arcpy.AddField_management(os.path.join(outpath, outname), countfield, 'LONG')
-    # for testing
-    #arcpy.AddField_management(os.path.join(outpath, outname), 'geomstring', 'TEXT')
 
     insertcursor = arcpy.da.InsertCursor(outfc, ['shape@', countfield, ])
 
