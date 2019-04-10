@@ -220,7 +220,6 @@ class Route:
 
         ##
         self.network_prj = arcpy.Describe(self.network).spatialReference
-        print(self.network_prj.name)
         ##
 
         self.outgdb = outgdb
@@ -233,11 +232,9 @@ class Route:
         self.time_zone = self.given_RouteAnalysisLayer_parameters['time_zone']
         self.line_shape = self.given_RouteAnalysisLayer_parameters['line_shape']
         self.accumulate_attributes = self.given_RouteAnalysisLayer_parameters['accumulate_attributes']
-        print(self.layer_name)
+
         ral = arcpy.na.MakeRouteAnalysisLayer(self.network, self.layer_name, self.travel_mode, self.time_of_day,
                                               self.time_zone, self.line_shape, self.accumulate_attributes)
-        # else:
-          # ral = arcpy.na.MakeRouteAnalysisLayer(self.network)
 
         self.routelayer = ral.getOutput(0)
         self.sublayer_names = arcpy.na.GetNAClassNames(self.routelayer)
@@ -288,26 +285,16 @@ class Route:
 
 def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
 
-    """count identical lines in linefc and return dissolve with count
+    """count identical lines in linefc  and return outfc with a field
+    (linecount) holding the count of equal lines. Outfc will  be split
+    on verticies.
 
     gdb -- string, path to .gdb where linefc exists
     linefc -- string, name of line featureclass in gdb to count
-    outfc -- string, path or name of dissolved output featureclass. If not path, result is placed in gdb.
+    outfc -- string, path or name of  output featureclass with count.
+    If not path, result is placed in gdb.
     """
 
-    def geometry_to_string(geometry):
-        jgeometry = json.loads(geometry.JSON)
-        paths = jgeometry['paths']
-        strings = []
-        for i in paths[0]:
-            for item in i:
-                strings.append(str(item))
-        stringify = ''.join(strings)
-        return stringify
-
-    def equalitycheck():
-
-        pass
 
     arcpy.env.workspace = gdb
     arcpy.env.overwriteOutput = overwrite
@@ -317,7 +304,6 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
     all_lines = [row[0] for row in arcpy.da.SearchCursor(lines_split, 'shape@')]
 
     counter  = Counter()
-    counted_lines = {}
     unike = { }
 
     with arcpy.da.SearchCursor(lines_split,'shape@') as cursor:
@@ -353,7 +339,7 @@ def countlines(gdb, linefc, outfc, countfield= 'linecount', overwrite=True):
 if __name__ == '__main__':
     resultgdb = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb'
     nd = r'C:\temp_data\vegnett_RUTEPL_181214.gdb\Route\ERFKPS_ND'
-    resultfile = r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb\routelines'
+    resultfile = 'routelines' # r'C:\Users\torbjorn.boe\Google Drive\Python\PyforArc\tests\test_df\routecount.gdb\routelines'
     origins = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Bosted'
     destinations = r'C:\Users\torbjorn.boe\Google Drive\Python\AVdemo\geocoded.gdb\Arbeidssted'
     countedlines = 'countedlines'# os.path.join(resultgdb,'countedlines')
