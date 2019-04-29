@@ -16,12 +16,13 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
         ## path = pathlib.Path(from_fc) Pretty cool but not needed. Listfield works without arcpy.env.workspace
         ## arcpy.env.workspace = path.parent
         from_fields = arcpy.ListFields(from_fc)
-        print(f'listFields from_fields: {from_fields}')
         from_fields = [(i.name,i.type) for i in from_fields if i.name not in [from_keyfield, 'OBJECTID','ObjectID','Shape','SHAPE']] # from_keyfield 'OBJECTID','ObjectID',
+        print(f'from_fields: {from_fields}')
     else:
         if type(from_fields) == str:
             from_fields = from_fields.split(',')
         from_fields = [(i.name,i.type) for i in arcpy.ListFields(from_fc) if i.name in from_fields]
+        print(f'chosen from_fields is {from_fields}')
 
 
     # add new fields
@@ -71,8 +72,10 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
     from_fields.insert(0,from_keyfield)
 
     if keyfield_type_equal:
+        print('keyfield_type_equal'.upper())
         valuedict = {r[0]:(r[1:]) for r in arcpy.da.SearchCursor(from_fc, from_fields)}
     else:
+        print('keyfield_type not equal'.upper())
         valuedict = {str(r[0]):(r[1:]) for r in arcpy.da.SearchCursor(from_fc, from_fields)}
 
     #print(valuedict)
@@ -82,6 +85,7 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
     #print(f'joining values from {from_fc} to {to_fc}')
     #print(f'new_fromfields: {new_fromfields}')
     #print([to_keyfield]+new_fromfields)
+    print(f'to keyfield = {to_keyfield}')
     with arcpy.da.UpdateCursor(to_fc, [to_keyfield]+new_fromfields) as cursor: #from_fields has been transferred to to_fc
         for row in cursor:
             # store the joinvalue of the row being updated in a keyvalue variable
@@ -93,8 +97,8 @@ def join_1one1(from_fc, from_keyfield, to_gdb, to_fc, to_keyfield, from_fields =
                     row[n] = valuedict[keyvalue][n-1]
                     #print(f'row is {valuedict[keyvalue][n-1]}')
                 cursor.updateRow(row)
-            except KeyError:
-                print('keyerror')
+            except KeyError as e:
+                print(f'keyerror: {e}')
                 pass
 
     del valuedict

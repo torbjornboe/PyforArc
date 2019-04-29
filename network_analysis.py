@@ -122,6 +122,7 @@ class Od_cost:
         """
         joins origins to lines and adds POINT_X, POINT_Y fields
         """
+        print('method origins to lines'.upper())
         if not self.__solve:
             print('run solve first')
             raise TypeError
@@ -133,10 +134,12 @@ class Od_cost:
         self.origings_path_name = self.origings_path_path.name
         
         arcpy.AddXY_management(self.origings_path)
-        #print(origings_path, destinations_path, lines_path)
+        #adding x and y fields to lines
+        print('joining x  and y to line'.upper())
         joins.join_1one1(self.origings_path, 'ObjectID', self.outgdb, self.lines_path, 'OriginID', ['Name','POINT_X','POINT_Y'])
-        
-        joins.join_1one1(self.origins,'OBJECTID',self.outgdb,self.lines_path,f'Name_{self.origings_path_name}', from_fields = 'all')
+        print(f'joining {self.origins} to {self.lines_path}'.upper())
+        joins.join_1one1(self.origins, self.origins_identifierfield, self.outgdb, self.lines_path, f'Name_{self.origings_path_name}', from_fields = 'all')
+        #changed arg pos 1 from objectid to self.origins_identifierfield
         
 
     def destinations_to_lines(self):
@@ -155,8 +158,9 @@ class Od_cost:
         
         arcpy.AddXY_management(self.destinations_path)
         joins.join_1one1(self.destinations_path, 'ObjectID', self.outgdb, self.lines_path, 'DestinationID', ['Name','POINT_X','POINT_Y'])
-        joins.join_1one1(self.destinations,'OBJECTID',self.outgdb,self.lines_path,f'Name_{self.destinations_path_name}', from_fields = 'all')
-        #arcpy.AddXY_management(self.destinations_path)
+        joins.join_1one1(self.destinations,self.destinations_identifierfield, self.outgdb,self.lines_path,f'Name_{self.destinations_path_name}', from_fields = 'all')
+        # changed arg pos 1 from objectid to self.destinations_identifierfield
+
 
     def multiple_origins(self, outname, outgdb, overwrite = True):
         """"
